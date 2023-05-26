@@ -2,6 +2,10 @@
 
 A flexible, highly customizable Piano Roll component for Vue.js. This component allows you to create a piano roll in your Vue application with ease.
 
+## Demo
+
+(Demo available)[https://vue-piano-roll.netlify.app/] and demo source code (here)[https://github.com/howardah/vue-piano-roll-demo].
+
 ## Installation
 
 ```bash
