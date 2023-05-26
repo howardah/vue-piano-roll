@@ -221,17 +221,21 @@ const mouseMove = (e: MouseEvent) => {
   }
 };
 
+const getLastId = () => {
+  if (notes.value.length === 0) return 0;
+  return notes.value.sort((a, b) => b.id - a.id)[0].id;
+};
+
 // Add note where mouse is
 const addNote = () => {
   if (!pianoRoll.value) return;
-  // const rect = pianoRoll.value.getBoundingClientRect();
   const x = mousePosition.value.x;
   const y = mousePosition.value.y;
   const start = getStart(x);
   if (start < 0) return;
   const note = getNote(y);
   const newNote = {
-    id: notes.value.length,
+    id: getLastId() + 1,
     start,
     length: 1,
     note,
