@@ -57,8 +57,8 @@
 
 <script setup lang="ts">
 import { WritableComputedRef, computed, onMounted, onUnmounted, ref } from "vue";
-import { MidiRangeNote, notesBetweenC1AndG9 } from "../assets/notes";
-import { Note, NoteColor, DragDetails, DragType, PianoRollProps } from "../assets/piano";
+import { OctaveNote, notesBetweenC1AndG9 } from "../assets/notes";
+import { PianoRollNote, NoteColor, DragDetails, DragType, PianoRollProps } from "../assets/piano";
 import FullScreen from "./FullScreen.vue";
 
 const emit = defineEmits(["update:modelValue"]);
@@ -87,12 +87,11 @@ const zoom = computed(() => {
   if (props.length === "infinite") return { x: props.zoomX, y: props.zoomY };
   const minZoomX = (rollWidth.value - rem.value * 4) / (rem.value * props.length * props.noteLength);
   const x = Math.max(minZoomX, props.zoomX);
-  console.log(rollWidth.value, x, props.zoomX);
 
   return { x, y: props.zoomY };
 });
 
-const notes: WritableComputedRef<Note[]> = computed({
+const notes: WritableComputedRef<PianoRollNote[]> = computed({
   get: () => props.modelValue || [],
   set: (value) => emit("update:modelValue", value),
 });
@@ -122,7 +121,7 @@ const unitClass = (index: number) => {
   return `unit u${unit} ${isBeatEnd ? "beat-end" : ""}`;
 };
 
-const getTop = (note: MidiRangeNote) => {
+const getTop = (note: OctaveNote) => {
   const index = scale.value.findIndex((n) => n === note);
   return index * (rem.value * 2 * zoom.value.y);
 };
@@ -145,7 +144,7 @@ const getStart = (x: number) => {
   return Math.floor((x - labelWidth) / unitWidth) / props.noteLength;
 };
 
-const changeColor = (note: Note) => {
+const changeColor = (note: PianoRollNote) => {
   const colorIndex = noteColors.findIndex((c) => c === note.color);
   note.color = noteColors[colorIndex + 1] || noteColors[0];
 };
@@ -155,7 +154,7 @@ function convertRemToPixels(rem: number) {
 }
 
 const dragStart = (
-  note: Note,
+  note: PianoRollNote,
   { e, dragType }: { e: MouseEvent | { offsetX: number }; dragType: DragType }
 ) => {
   note.dragging = true;
@@ -198,7 +197,6 @@ const mouseMove = (e: MouseEvent) => {
     const lessThanZero = newStart < 0;
     const greaterThanLength = newStart + note.length > length.value;
     note.start = lessThanZero ? 0 : greaterThanLength ? length.value - note.length - 2 : newStart;
-    console.log(note.start, note.length, length.value);
     note.note = newNote;
     return;
   }
@@ -212,7 +210,7 @@ const mouseMove = (e: MouseEvent) => {
 
   if (type === "right" || type === "drag-right") {
     const newLength = xStart - note.start + 1;
-    note.length = newLength < 1 ? 1 : newLength;
+    note.length = newLength <= 0 ? (1 / props.noteLength) : newLength;
   }
 
   if (type === "drag-right") {
@@ -240,13 +238,13 @@ const addNote = () => {
     velocity: 100,
     color: "red",
     dragging: false,
-  } as Note;
+  } as PianoRollNote;
   notes.value.push(newNote);
 
   dragStart(newNote, { e: { offsetX: 0 }, dragType: "drag-right" });
 };
 
-const deleteNote = (note: Note) => {
+const deleteNote = (note: PianoRollNote) => {
   notes.value = notes.value.filter((n) => n.id !== note.id);
 };
 

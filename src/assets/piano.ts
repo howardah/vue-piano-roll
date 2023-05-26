@@ -1,19 +1,15 @@
-import { MidiRangeNote } from './notes';
+import { OctaveNote } from './notes';
 
 export type NoteColor = "red" | "blue" | "green";
 
-export interface Note {
+export interface PianoRollNote {
   id: number;
   start: number;
   length: number;
-  note: MidiRangeNote;
+  note: OctaveNote;
   velocity: number;
   color: NoteColor;
   dragging: boolean;
-}
-
-export interface ExtendedNote extends Note {
-    end: number;
 }
 
 export type DragType = "left" | "drag" | "right" | "drag-right";
@@ -25,7 +21,7 @@ export interface DragPlacement {
 }
 
 export interface DragDetails {
-  note: Note;
+  note: PianoRollNote;
   offset: number;
   dragType: DragType;
   placement: DragPlacement;
@@ -34,10 +30,10 @@ export interface DragDetails {
 export interface PianoRollProps {
   zoomX?: number;
   zoomY?: number;
-  rangeBottom?: MidiRangeNote;
-  rangeTop?: MidiRangeNote;
+  rangeBottom?: OctaveNote;
+  rangeTop?: OctaveNote;
   beat?: number;
-  modelValue: Note[];
+  modelValue: PianoRollNote[];
   length?: number | "infinite";
   noteLength?: number;
 }

@@ -1,9 +1,6 @@
 import PianoRoll from "./components/PianoRoll.vue";
+import { PianoRollNote } from './assets/piano';
+import { OctaveNote, notesBetweenC1AndG9 } from './assets/notes';
 
-// export default {
-//     install: (Vue: any) => {
-//         Vue.component('piano-roll', PianoRoll);
-//     }
-// };
-
-export { PianoRoll };
+export { PianoRoll, notesBetweenC1AndG9 };
+export type { PianoRollNote, OctaveNote };
