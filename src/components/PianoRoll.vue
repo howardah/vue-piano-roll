@@ -320,6 +320,7 @@ const playheadHidden = computed(() => {
     height: 100%;
     max-height: 100%;
     z-index: 5;
+    background-color: rgb(76, 85, 99);
   }
 }
 .piano-roll-container {
