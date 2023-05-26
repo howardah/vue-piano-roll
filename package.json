@@ -1,0 +1,51 @@
+{
+  "name": "vue-piano-roll",
+  "version": "1.0.0",
+  "description": "A DAW-like Piano Roll Vue Component.",
+  "main": "dist/vue-piano-roll.umd.js",
+  "module": "dist/vue-piano-roll.es.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/vue-piano-roll.es.js",
+      "require": "./dist/vue-piano-roll.umd.js"
+    },
+    "./dist/styles.css": "./dist/styles.css"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vue-tsc",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/howardah/vue-piano-roll"
+  },
+  "keywords": [
+    "audio-production",
+    "daw",
+    "piano-roll",
+    "vue",
+    "vue3"
+  ],
+  "author": "Adam Thomas Howard",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/howardah/vue-piano-roll/issues"
+  },
+  "homepage": "https://github.com/howardah/vue-piano-roll#readme",
+  "dependencies": {
+    "vue": "^3.2.47"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.4",
+    "@vitejs/plugin-vue": "^4.1.0",
+    "sass": "^1.62.1",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.2",
+    "vue-tsc": "^1.6.5"
+  }
+}
