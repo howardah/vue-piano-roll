@@ -46,9 +46,5 @@ export interface PianoRollProps {
   noteLength?: number;
   loop?: boolean;
   noteColor?: string;
-  notesStarting?: (notes: OctaveNote[]) => void;
-  notesEnding?: (notes: OctaveNote[]) => void;
   onNoteEvent?: (event: NoteEvent) => void;
-  onLastNoteEnd?: () => void;
-  onLastBeatEnd?: () => void;
 }

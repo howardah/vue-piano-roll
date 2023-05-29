@@ -56,15 +56,17 @@ of optional props:
 
 ## Props
 
-| Prop          | Type   | Description                                                                                   |
-| ------------- | ------ | --------------------------------------------------------------------------------------------- |
-| zoomX         | Number | Defines the zoom level along the x-axis.                                                      |
-| zoomY         | Number | Defines the zoom level along the y-axis.                                                      |
-| beat          | Number | The current beat.                                                                             |
-| rangeBottom   | String | The lowest note that the piano roll should display.                                           |
-| rangeTop      | String | The highest note that the piano roll should display.                                          |
-| length        | Number | The total length of the piano roll. (also supports the string "infinite")                     |
-| noteLength    | Number | The the number of beats in a note. (defaults to 2)                                            |
+| Prop          | Type     | Description                                                                                      |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| zoomX         | Number   | Defines the zoom level along the x-axis.                                                         |
+| zoomY         | Number   | Defines the zoom level along the y-axis.                                                         |
+| beat          | Number   | The current beat.                                                                                |
+| rangeBottom   | String   | The lowest note that the piano roll should display.                                              |
+| rangeTop      | String   | The highest note that the piano roll should display.                                             |
+| length        | Number   | The total length of the piano roll. (also supports the string "infinite")                        |
+| noteLength    | Number   | The the number of beats in a note. (defaults to 2)                                               |
+| noteColor     | String   | The default color of the piano roll notes                                                        |
+| onNoteEvent   | Function | A callback function with an event argument that includes a list of notes that have started/ended.|
 
 ## Events
 
