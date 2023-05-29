@@ -29,9 +29,8 @@
           }"
           :key="note.id"
           @click.right.prevent="deleteNote(note)"
-          @dblclick="changeColor(note)"
         >
-          <div :class="`note-inner ${note.color}`">
+          <div class="note-inner" :style="noteCSS(note)">
             <span
               @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'left' })"
               @mouseup.prevent="dragEnd"
@@ -56,14 +55,13 @@
 </template>
 
 <script setup lang="ts">
-import { WritableComputedRef, computed, onMounted, onUnmounted, ref } from "vue";
+import { WritableComputedRef, computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { OctaveNote, notesBetweenC1AndG9 } from "../assets/notes";
-import { PianoRollNote, NoteColor, DragDetails, DragType, PianoRollProps } from "../assets/piano";
+import { PianoRollNote, DragDetails, DragType, PianoRollProps, PianoRollSimpleNote } from "../assets/piano";
+import { darken, lighten } from "color2k";
 import FullScreen from "./FullScreen.vue";
 
 const emit = defineEmits(["update:modelValue"]);
-
-const noteColors: NoteColor[] = ["red", "blue", "green"];
 
 const mousePosition = ref({ x: 0, y: 0 });
 const pianoRoll = ref<HTMLDivElement | null>(null);
@@ -73,6 +71,8 @@ const rem = ref(16);
 const fullscreen = ref(false);
 const rollWidth = ref(0);
 
+const startedNotes = ref([] as OctaveNote[]);
+
 const props = withDefaults(defineProps<PianoRollProps>(), {
   zoomX: 0.5,
   zoomY: 1,
@@ -81,14 +81,30 @@ const props = withDefaults(defineProps<PianoRollProps>(), {
   rangeTop: "G5",
   length: 80,
   noteLength: 2,
+  noteColor: "#f43f5f",
+  loop: true,
+  onNoteEvent: () => {},
 });
 
 const zoom = computed(() => {
   if (props.length === "infinite") return { x: props.zoomX, y: props.zoomY };
-  const minZoomX = (rollWidth.value - rem.value * 4) / (rem.value * props.length * props.noteLength);
+  const minZoomX =
+    (rollWidth.value - rem.value * 4) / (rem.value * props.length * props.noteLength);
   const x = Math.max(minZoomX, props.zoomX);
 
   return { x, y: props.zoomY };
+});
+
+const simpleNotes = computed(() => {
+  return notes.value.map((note) => ({
+    id: note.id,
+    note: note.note,
+  } as PianoRollSimpleNote));
+});
+
+const actualBeat = computed(() => {
+  if (props.length === "infinite" || !props.loop) return props.beat;
+  return props.beat % length.value;
 });
 
 const notes: WritableComputedRef<PianoRollNote[]> = computed({
@@ -115,11 +131,51 @@ const scale = computed(() => {
     .reverse();
 });
 
+const notesStartingAt = (beat: number) => {
+  return notes.value
+    .filter((note) => note.start === lengthToBeats(beat))
+    .map((note) => note.note);
+};
+
+const notesEndingAt = (beat: number) => {
+  return notes.value
+    .filter((note) => {
+      if(beat === 0) beat = length.value;
+      return note.start + note.length === lengthToBeats(beat)
+    })
+    .map((note) => note.note);
+};
+
+watch(actualBeat, (beat) => {
+  props.onNoteEvent({
+    notesStarting: notesStartingAt(beat),
+    notesEnding: notesEndingAt(beat),
+  });
+});
+
+watch(simpleNotes, (notes, oldNotes) => {
+  // startedNotes.value = notes.map((note) => note.note);
+  const difference = notes.filter((note) => {
+    const oldNote = oldNotes.find((n) => n.id === note.id);
+    return !oldNote || oldNote.note !== note.note;
+  });
+
+  if (difference.some(note => draggingNote.value?.note.id === note.id)) {
+    const note = (draggingNote.value as DragDetails).note;
+    endStartedNotes();
+    startAndEndNotes([note.note], (note.length * 1000 * 60) / 120 );
+  }
+});
+
 const unitClass = (index: number) => {
   const unit = ((index - 1) % props.noteLength) + 1;
   const isBeatEnd = unit === props.noteLength;
   return `unit u${unit} ${isBeatEnd ? "beat-end" : ""}`;
 };
+
+// ====================
+// Calculate Note Position
+// ====================
 
 const getTop = (note: OctaveNote) => {
   const index = scale.value.findIndex((n) => n === note);
@@ -144,20 +200,23 @@ const getStart = (x: number) => {
   return Math.floor((x - labelWidth) / unitWidth) / props.noteLength;
 };
 
-const changeColor = (note: PianoRollNote) => {
-  const colorIndex = noteColors.findIndex((c) => c === note.color);
-  note.color = noteColors[colorIndex + 1] || noteColors[0];
-};
-
 function convertRemToPixels(rem: number) {
   return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
 
+// ====================
+// Dragging Logic
+// ====================
+
 const dragStart = (
   note: PianoRollNote,
-  { e, dragType }: { e: MouseEvent | { offsetX: number }; dragType: DragType }
+  { e, dragType }: { e: MouseEvent; dragType: DragType },
+  isNew: boolean = false
 ) => {
-  note.dragging = true;
+  // Ignore right click
+  if (e.button !== 0) return;
+
+  note.selected = true;
   draggingNote.value = {
     note,
     offset: e.offsetX,
@@ -169,34 +228,43 @@ const dragStart = (
     },
   };
 
+  startAndEndNotes([note.note], (note.length * 1000 * 60) / 120);
+
   setTimeout(() => {
-    // if (!draggingNote.value) changeColor(note);
+    if (!note.selected && !isNew) {
+      if (!e.shiftKey) notes.value.forEach((note) => (note.selected = false));
+      note.selected = true;
+    }
   }, 100);
 };
 
 const dragEnd = () => {
   if (!draggingNote.value) return;
   const note = draggingNote.value.note;
-  note.dragging = false;
+  note.selected = false;
   draggingNote.value = null;
 };
 
-const mouseMove = (e: MouseEvent) => {
-  if (!pianoRoll.value) return;
-  const rect = pianoRoll.value.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  mousePosition.value = { x, y };
+const beatsToLength = (beats: number) => {
+  return beats * props.noteLength;
+};
+
+const lengthToBeats = (length: number) => {
+  return length / (props.noteLength);
+};
+
+const setSelectedNotePosition = () => {
   if (!draggingNote.value) return;
+  const { x, y } = mousePosition.value;
   const note = draggingNote.value.note;
   const type = draggingNote.value.dragType;
-  const xStart = getStart(x);
+  const xStart = getStart(x) - lengthToBeats(1);
   const newStart = getStart(x - draggingNote.value.offset);
   const newNote = getNote(y);
   if (type === "drag") {
     const lessThanZero = newStart < 0;
-    const greaterThanLength = newStart + note.length > length.value;
-    note.start = lessThanZero ? 0 : greaterThanLength ? length.value - note.length - 2 : newStart;
+    const greaterThanLength = beatsToLength(newStart + note.length) > length.value;
+    note.start = lessThanZero ? 0 : greaterThanLength ? lengthToBeats(length.value - note.length - (1)) : newStart;
     note.note = newNote;
     return;
   }
@@ -210,7 +278,7 @@ const mouseMove = (e: MouseEvent) => {
 
   if (type === "right" || type === "drag-right") {
     const newLength = xStart - note.start + 1;
-    note.length = newLength <= 0 ? (1 / props.noteLength) : newLength;
+    note.length = newLength <= 0 ? 1 / props.noteLength : newLength;
   }
 
   if (type === "drag-right") {
@@ -221,13 +289,53 @@ const mouseMove = (e: MouseEvent) => {
   }
 };
 
+// =================================== //
+// ============ Mouse Tracking ============= //
+// =================================== //
+
+const mouseMove = (e: MouseEvent) => {
+  if (!pianoRoll.value) return;
+  const rect = pianoRoll.value.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  mousePosition.value = { x, y };
+  setSelectedNotePosition();
+};
+
 const getLastId = () => {
   if (notes.value.length === 0) return 0;
   return notes.value.sort((a, b) => b.id - a.id)[0].id;
 };
 
+const startAndEndNotes = (notes: OctaveNote[], timeout: number) => {
+  props.onNoteEvent({
+    notesStarting: notes,
+    notesEnding: [],
+  });
+
+  startedNotes.value.push(...notes);
+
+  setTimeout(() => {
+    props.onNoteEvent({
+      notesStarting: [],
+      notesEnding: notes,
+    });
+
+    startedNotes.value = startedNotes.value.filter((note) => !notes.includes(note));
+  }, timeout);
+};
+
+const endStartedNotes = () => {
+  props.onNoteEvent({
+    notesStarting: [],
+    notesEnding: startedNotes.value,
+  });
+  startedNotes.value = [];
+};
+
 // Add note where mouse is
-const addNote = () => {
+const addNote = (e: MouseEvent) => {
+  if (e.button !== 0) return;
   if (!pianoRoll.value) return;
   const x = mousePosition.value.x;
   const y = mousePosition.value.y;
@@ -240,12 +348,12 @@ const addNote = () => {
     length: 1,
     note,
     velocity: 100,
-    color: "red",
-    dragging: false,
+    color: props.noteColor,
+    selected: false,
   } as PianoRollNote;
   notes.value.push(newNote);
 
-  dragStart(newNote, { e: { offsetX: 0 }, dragType: "drag-right" });
+  dragStart(newNote, { e, dragType: "right" });
 };
 
 const deleteNote = (note: PianoRollNote) => {
@@ -284,7 +392,7 @@ const labelFontSize = computed(() => {
 });
 
 const playheadLeft = computed(() => {
-  return `${getLeft(props.beat, true)}px`;
+  return `${getLeft(actualBeat.value, true)}px`;
 });
 
 const playheadHeight = computed(() => {
@@ -298,6 +406,34 @@ const playheadWidth = computed(() => {
 const playheadHidden = computed(() => {
   return props.beat < 0;
 });
+
+const noteColor = (note: PianoRollNote) => {
+  if (note.selected) return lighten(note.color, 0.1);
+  return note.color;
+};
+
+const noteColorShadow = (note: PianoRollNote) => {
+  if (note.selected) return note.color;
+  return darken(note.color, 0.1);
+};
+
+const noteColorHighlight = (note: PianoRollNote) => {
+  if (note.selected) return lighten(note.color, 0.2);
+  return lighten(note.color, 0.1);
+};
+
+const noteCSS = (note: PianoRollNote) => {
+  const noteShadow = noteColorShadow(note);
+  const noteHighlight = noteColorHighlight(note);
+
+  return {
+    backgroundColor: noteColor(note),
+    borderTopColor: noteHighlight,
+    borderLeftColor: noteHighlight,
+    borderRightColor: noteShadow,
+    borderBottomColor: noteShadow,
+  };
+};
 </script>
 
 <style lang="scss" scoped>
@@ -434,57 +570,6 @@ const playheadHidden = computed(() => {
           //   @apply cursor-col-resize;
 
           cursor: col-resize;
-        }
-
-        &.red {
-          //   @apply bg-red-500 border-t-red-400 border-l-red-400 border-r-red-600 border-b-red-600;
-
-          border-top-color: rgb(248 113 113 / 1);
-          border-top-color: rgb(248 113 113 / var(--tw-border-opacity));
-          border-left-color: rgb(248 113 113 / 1);
-          border-left-color: rgb(248 113 113 / var(--tw-border-opacity));
-          border-right-color: rgb(220 38 38 / 1);
-          border-right-color: rgb(220 38 38 / var(--tw-border-opacity));
-          --tw-border-opacity: 1;
-          border-bottom-color: rgb(220 38 38 / 1);
-          border-bottom-color: rgb(220 38 38 / var(--tw-border-opacity));
-          --tw-bg-opacity: 1;
-          background-color: rgb(239 68 68 / 1);
-          background-color: rgb(239 68 68 / var(--tw-bg-opacity));
-        }
-
-        &.blue {
-          //   @apply bg-blue-500 border-t-blue-400 border-l-blue-400 border-r-blue-600 border-b-blue-600;
-
-          border-top-color: rgb(96 165 250 / 1);
-          border-top-color: rgb(96 165 250 / var(--tw-border-opacity));
-          border-left-color: rgb(96 165 250 / 1);
-          border-left-color: rgb(96 165 250 / var(--tw-border-opacity));
-          border-right-color: rgb(37 99 235 / 1);
-          border-right-color: rgb(37 99 235 / var(--tw-border-opacity));
-          --tw-border-opacity: 1;
-          border-bottom-color: rgb(37 99 235 / 1);
-          border-bottom-color: rgb(37 99 235 / var(--tw-border-opacity));
-          --tw-bg-opacity: 1;
-          background-color: rgb(59 130 246 / 1);
-          background-color: rgb(59 130 246 / var(--tw-bg-opacity));
-        }
-
-        &.green {
-          //   @apply bg-green-500 border-t-green-400 border-l-green-400 border-r-green-600 border-b-green-600;
-
-          border-top-color: rgb(74 222 128 / 1);
-          border-top-color: rgb(74 222 128 / var(--tw-border-opacity));
-          border-left-color: rgb(74 222 128 / 1);
-          border-left-color: rgb(74 222 128 / var(--tw-border-opacity));
-          border-right-color: rgb(22 163 74 / 1);
-          border-right-color: rgb(22 163 74 / var(--tw-border-opacity));
-          --tw-border-opacity: 1;
-          border-bottom-color: rgb(22 163 74 / 1);
-          border-bottom-color: rgb(22 163 74 / var(--tw-border-opacity));
-          --tw-bg-opacity: 1;
-          background-color: rgb(34 197 94 / 1);
-          background-color: rgb(34 197 94 / var(--tw-bg-opacity));
         }
       }
 
