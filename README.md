@@ -57,7 +57,7 @@ The `PianoRoll` component requires a v-model binding to an array to function cor
   :noteHeight="1"
   :noteColor="'#f43f5f'"
   :loop="true"
-  @noteEvent="handleNoteEvent"
+  :onNoteEvent="handleNoteEvent"
 ></piano-roll>
 ```
 
