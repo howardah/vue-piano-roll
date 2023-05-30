@@ -1,3 +1,5 @@
+Here's an updated readme including the new props and explanations:
+
 # PianoRoll Vue Component
 
 A flexible, highly customizable Piano Roll component for Vue.js. This component allows you to create a piano roll in your Vue application with ease.
@@ -38,47 +40,59 @@ Then use the `PianoRoll` component in your template:
 <piano-roll v-model="notes"></piano-roll>
 ```
 
-The `PianoRoll` component requires a v-model binding to an array to function correctly and also supports a variety 
-of optional props:
+The `PianoRoll` component requires a v-model binding to an array to function correctly and also supports a variety of optional props:
 
 ```html
 <piano-roll
   v-model="notes"
   :zoomX="0.5"
   :zoomY="1"
-  :beat="0"
+  :currentBeat="0"
+  :currentTick="0"
+  :ticksPerBeat="4"
   :rangeBottom="'C1'"
   :rangeTop="'G5'"
   :length="80"
-  :noteLength="2"
+  :defaultNoteLength="2"
+  :noteHeight="1"
+  :noteColor="'#f43f5f'"
+  :loop="true"
+  @noteEvent="handleNoteEvent"
 ></piano-roll>
 ```
 
 ## Props
 
-| Prop          | Type     | Description                                                                                      |
-| ------------- | -------- | ------------------------------------------------------------------------------------------------ |
-| zoomX         | Number   | Defines the zoom level along the x-axis.                                                         |
-| zoomY         | Number   | Defines the zoom level along the y-axis.                                                         |
-| beat          | Number   | The current beat.                                                                                |
-| rangeBottom   | String   | The lowest note that the piano roll should display.                                              |
-| rangeTop      | String   | The highest note that the piano roll should display.                                             |
-| length        | Number   | The total length of the piano roll. (also supports the string "infinite")                        |
-| noteLength    | Number   | The the number of beats in a note. (defaults to 2)                                               |
-| noteColor     | String   | The default color of the piano roll notes                                                        |
-| onNoteEvent   | Function | A callback function with an event argument that includes a list of notes that have started/ended.|
+| Prop              | Type               | Description                                                                                          |
+| ----------------- | ------------------ | ---------------------------------------------------------------------------------------------------- |
+| zoomX             | Number             | Defines the zoom level along the x-axis.                                                             |
+| zoomY             | Number             | Defines the zoom level along the y-axis.                                                             |
+| rangeBottom       | OctaveNote         | The lowest note that the piano roll should display.                                                  |
+| rangeTop          | OctaveNote         | The highest note that the piano roll should display.                                                 |
+| currentBeat       | Number             | The current beat.                                                                                    |
+| currentTick       | Number             | The current tick within the beat.                                                                    |
+| ticksPerBeat      | Number             | The number of ticks in a beat. (defaults to 4)                                                       |
+| defaultNoteLength | Number             | The default number of beats in a note. (defaults to 2)                                               |
+| noteHeight        | Number             | The apparent 3D height of the piano roll notes.                                                      |
+| modelValue        | Array              | The array of notes for the piano roll.                                                               |
+| length            | Number\|"infinite" | The total length of the piano roll. (also supports the string "infinite")                            |
+| loop              | Boolean            | If true, the piano roll will loop back to the beginning when it reaches the end.                     |
+| noteColor         | String             | The default color of the piano roll notes.                                                           |
+| onNoteEvent       | Function           | A callback function with a NoteEvent argument that includes a list of notes that have started/ended. |
 
 ## Events
 
 The PianoRoll emits the following events:
 
-| Event               | Output Type   | Description                                               |
-| ------------------- | ------------- | --------------------------------------------------------- |
-| `update:modelValue` | Array         | Emits the updated array of notes when notes are modified. |
+| Event               | Output Type | Description                                               |
+| ------------------- | ----------- | --------------------------------------------------------- |
+| `update:modelValue` | Array       | Emits the updated array of notes when notes are modified. |
 
 ## Contributing
 
-Contributions are welcome! If you have any issues or feature requests, please submit an issue on Github.
+Contributions are welcome! If you have any issues or
+
+feature requests, please submit an issue on Github.
 
 ## License
 
