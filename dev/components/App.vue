@@ -11,14 +11,13 @@
     :clear-notes="() => (notes = [])"
     :zoom-in="zoomIn"
     :zoom-out="zoomOut"
-
     @update:tempo="tempo = $event"
     @update:synth-selector="synthSelector = $event"
   />
   <div class="page">
     <div class="roller">
       <PianoRoll
-        :beat="beat"
+        :current-tick="beat"
         range-bottom="F#2"
         range-top="D#3"
         v-model="notes"
@@ -26,6 +25,8 @@
         :zoom-y="zoomY"
         :length="16"
         :on-note-event="onNoteEvent"
+        :ticks-per-beat="3"
+        :note-height="1"
       />
     </div>
     <pre
@@ -134,7 +135,6 @@ const pause = () => {
   Tone.Transport.stop();
   synth?.releaseAll();
   playing.value = false;
-  if (synth) synth.releaseAll();
 };
 
 const stop = () => {
@@ -169,14 +169,14 @@ onMounted(() => {
   Tone.Transport.bpm.value = tempo.value;
 
   Tone.Transport.scheduleRepeat(() => {
-    beat.value += 1;
+    if (playing.value) beat.value += 1;
   }, unit);
   // schedule();
 });
 
 onUpdated(() => {
   // schedule();
-})
+});
 </script>
 
 <style lang="scss">

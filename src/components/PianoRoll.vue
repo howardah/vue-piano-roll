@@ -13,7 +13,7 @@
           <div class="label">{{ tone }}</div>
           <div
             :class="`beat ${beatClass(index)}`"
-            v-for="index in unitsToBeats(length)"
+            v-for="index in ticksToBeats(length)"
             :key="`${tone}:${index}`"
           ></div>
         </div>
@@ -23,7 +23,7 @@
             :class="`note ${note.id === draggingNote?.note?.id ? 'dragging' : ''}`"
             v-for="note in notes"
             :style="{
-              gridColumn: `${beatsToUnits(note.start) + 2} / span ${beatsToUnits(note.length)}`,
+              gridColumn: `${beatsToTicks(note.start) + 2} / span ${beatsToTicks(note.length)}`,
               gridRow: `${scaleLookup[note.note] + 1} / span 1`,
               height: zoomY * 2 + 'rem',
             }"
@@ -83,13 +83,15 @@ const startedNotes = ref([] as OctaveNote[]);
 const props = withDefaults(defineProps<PianoRollProps>(), {
   zoomX: 0.5,
   zoomY: 1,
-  beat: 0,
+  currentBeat: -1,
   rangeBottom: "C1",
   rangeTop: "G5",
   length: 80,
-  noteLength: 2,
+  ticksPerBeat: 2,
+  defaultNoteLength: 1,
   noteColor: "#f43f5f",
   loop: true,
+  noteHeight: 2,
   onNoteEvent: () => {},
 });
 
@@ -111,9 +113,18 @@ const simpleNotes = computed(() => {
   );
 });
 
-const actualBeat = computed(() => {
-  if (props.length === "infinite" || !props.loop) return props.beat;
-  return props.beat % length.value;
+const beatsToTicks = (beats: number) => {
+  return Math.round(beats * props.ticksPerBeat);
+};
+
+const ticksToBeats = (length: number) => {
+  return length / props.ticksPerBeat;
+};
+
+const currentTime = computed(() => {
+  const time = props.currentTick ?? beatsToTicks(props.currentBeat);
+  if (props.length === "infinite" || !props.loop) return time;
+  return time % length.value;
 });
 
 const notes: WritableComputedRef<PianoRollNote[]> = computed({
@@ -122,7 +133,7 @@ const notes: WritableComputedRef<PianoRollNote[]> = computed({
 });
 
 const length = computed(() => {
-  if (props.length !== "infinite") return props.length * props.noteLength;
+  if (props.length !== "infinite") return props.length * props.ticksPerBeat;
   const defaultLength = Math.ceil(
     (pianoRoll.value?.getBoundingClientRect().width || 0) / (rem.value * zoom.value.x)
   );
@@ -148,20 +159,20 @@ const scaleLookup = computed(() => {
   return lookup;
 });
 
-const notesStartingAt = (beat: number) => {
-  return notes.value.filter((note) => note.start === unitsToBeats(beat)).map((note) => note.note);
+const notesStartingAt = (tick: number) => {
+  return notes.value.filter((note) => beatsToTicks(note.start) === tick).map((note) => note.note);
 };
 
-const notesEndingAt = (beat: number) => {
+const notesEndingAt = (tick: number) => {
   return notes.value
     .filter((note) => {
-      if (beat === 0) beat = length.value;
-      return note.start + note.length === unitsToBeats(beat);
+      if (tick === 0) tick = length.value;
+      return beatsToTicks(note.start + note.length) === tick;
     })
     .map((note) => note.note);
 };
 
-watch(actualBeat, (beat) => {
+watch(currentTime, (beat) => {
   props.onNoteEvent({
     notesStarting: notesStartingAt(beat),
     notesEnding: notesEndingAt(beat),
@@ -182,7 +193,7 @@ watch(simpleNotes, (notes, oldNotes) => {
 });
 
 const beatClass = (index: number) => {
-  const unit = ((index - 1) % props.noteLength) + 1;
+  const unit = ((index - 1) % props.ticksPerBeat) + 1;
   return `beat b${unit} beat-end`;
 };
 
@@ -195,17 +206,17 @@ const getNote = (y: number) => {
   return scale.value[index];
 };
 
-const getLeft = (start: number, units: boolean = false) => {
+const getLeft = (start: number, ticks: boolean = false) => {
   const labelWidth = rem.value * 4;
   const unitWidth = rem.value * zoom.value.x;
-  const startInUnits = units ? unitsToBeats(start) : start;
-  return labelWidth + startInUnits * unitWidth;
+  const startInBeats = ticks ? ticksToBeats(start) : start;
+  return labelWidth + startInBeats * unitWidth;
 };
 
 const getStart = (x: number) => {
   const labelWidth = rem.value * 4;
   const unitWidth = rem.value * zoom.value.x;
-  return Math.floor((x - labelWidth) / unitWidth);
+  return ticksToBeats(Math.floor(beatsToTicks((x - labelWidth) / unitWidth)));
 };
 
 function convertRemToPixels(rem: number) {
@@ -253,44 +264,29 @@ const dragEnd = () => {
   draggingNote.value = null;
 };
 
-const beatsToUnits = (beats: number) => {
-  return beats * props.noteLength;
-};
-
-const unitsToBeats = (length: number) => {
-  return length / props.noteLength;
-};
-
 const setSelectedNotePosition = () => {
   if (!draggingNote.value) return;
   const { x, y } = mousePosition.value;
   const note = draggingNote.value.note;
   const type = draggingNote.value.dragType;
-  const xStart = getStart(x) - unitsToBeats(1);
-  const newStart = getStart(x - draggingNote.value.offset);
+  const xStart = getStart(x) - ticksToBeats(props.ticksPerBeat - 1);
+  const newStart = Math.max(getStart(x - draggingNote.value.offset), 0);
   const newNote = getNote(y);
   if (type === "drag") {
-    const lessThanZero = newStart < 0;
-    const greaterThanLength = beatsToUnits(newStart + note.length) > length.value;
-    note.start = lessThanZero
-      ? 0
-      : greaterThanLength
-      ? unitsToBeats(length.value - note.length - 1)
-      : newStart;
+    note.start = Math.min(ticksToBeats(length.value - beatsToTicks(note.length)), newStart);
     note.note = newNote;
     return;
   }
 
   if (type === "left") {
-    note.start =
-      newStart < draggingNote.value.placement.end ? newStart : draggingNote.value.placement.end - 1;
-    note.length = draggingNote.value.placement.end - newStart || 1;
+    note.start = Math.min(newStart, draggingNote.value.placement.end - ticksToBeats(1));
+    note.length = draggingNote.value.placement.end - newStart || ticksToBeats(1);
     return;
   }
 
   if (type === "right" || type === "drag-right") {
     const newLength = xStart - note.start + 1;
-    note.length = newLength <= 0 ? 1 / props.noteLength : newLength;
+    note.length = newLength <= 0 ? 1 / props.ticksPerBeat : newLength;
   }
 
   if (type === "drag-right") {
@@ -347,7 +343,6 @@ const endStartedNotes = () => {
 
 // Add note where mouse is
 const addNote = (e: MouseEvent) => {
-  console.log("add note");
   if (e.button !== 0) return;
   if (!pianoRoll.value) return;
   const x = mousePosition.value.x;
@@ -358,13 +353,15 @@ const addNote = (e: MouseEvent) => {
   const newNote = {
     id: getLastId() + 1,
     start,
-    length: 1,
+    length: props.defaultNoteLength,
     note,
     velocity: 100,
     color: props.noteColor,
     selected: false,
   } as PianoRollNote;
   notes.value.push(newNote);
+
+  console.log(`${beatsToTicks(newNote.start) + 2} / span ${beatsToTicks(newNote.length)}`);
 
   dragStart(newNote, { e, dragType: "right" });
 };
@@ -393,11 +390,11 @@ onUnmounted(() => {
 });
 
 const toneGridTemplate = computed(() => {
-  return `4rem repeat(${unitsToBeats(length.value)}, calc(1rem * ${zoom.value.x}))`;
+  return `4rem repeat(${ticksToBeats(length.value)}, calc(1rem * ${zoom.value.x}))`;
 });
 
 const noteGridTemplate = computed(() => {
-  return `4rem repeat(${length.value}, calc(1rem * ${unitsToBeats(zoom.value.x)}))`;
+  return `4rem repeat(${length.value}, calc(1rem * ${ticksToBeats(zoom.value.x)}))`;
 });
 
 const noteGridTemplateRows = computed(() => {
@@ -413,7 +410,7 @@ const labelFontSize = computed(() => {
 });
 
 const playheadLeft = computed(() => {
-  return `${getLeft(actualBeat.value, true)}px`;
+  return `${getLeft(currentTime.value, true)}px`;
 });
 
 const playheadHeight = computed(() => {
@@ -421,11 +418,11 @@ const playheadHeight = computed(() => {
 });
 
 const playheadWidth = computed(() => {
-  return `${unitsToBeats(zoom.value.x)}rem`;
+  return `${ticksToBeats(zoom.value.x)}rem`;
 });
 
 const playheadHidden = computed(() => {
-  return props.beat < 0;
+  return currentTime.value < 0;
 });
 
 const noteColor = (note: PianoRollNote) => {
@@ -442,6 +439,10 @@ const noteColorHighlight = (note: PianoRollNote) => {
   if (note.selected) return lighten(note.color, 0.2);
   return lighten(note.color, 0.1);
 };
+
+const noteHeight = computed(() => {
+  return `${props.noteHeight}px`;
+});
 
 const noteCSS = (note: PianoRollNote) => {
   const noteShadow = noteColorShadow(note);
@@ -558,6 +559,7 @@ const noteCSS = (note: PianoRollNote) => {
       grid-template-rows: v-bind(noteGridTemplateRows);
       position: absolute;
       top: 0;
+      left: 0;
       pointer-events: none;
       .note {
         position: relative;
@@ -567,6 +569,7 @@ const noteCSS = (note: PianoRollNote) => {
           position: absolute;
           border-style: solid;
           border-width: 2px;
+          border-width: v-bind(noteHeight);
           width: 100%;
           height: 100%;
           display: grid;

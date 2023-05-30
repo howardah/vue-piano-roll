@@ -40,10 +40,13 @@ export interface PianoRollProps {
   zoomY?: number;
   rangeBottom?: OctaveNote;
   rangeTop?: OctaveNote;
-  beat?: number;
+  currentBeat?: number;
+  currentTick?: number;
+  ticksPerBeat?: number;
+  defaultNoteLength?: number;
+  noteHeight?: number;
   modelValue: PianoRollNote[];
   length?: number | "infinite";
-  noteLength?: number;
   loop?: boolean;
   noteColor?: string;
   onNoteEvent?: (event: NoteEvent) => void;
