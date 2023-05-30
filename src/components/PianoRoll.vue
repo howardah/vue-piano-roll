@@ -12,40 +12,41 @@
         >
           <div class="label">{{ tone }}</div>
           <div
-            :class="`unit ${unitClass(index)}`"
-            v-for="index in length"
+            :class="`beat ${beatClass(index)}`"
+            v-for="index in unitsToBeats(length)"
             :key="`${tone}:${index}`"
           ></div>
         </div>
 
-        <div
-          :class="`note ${note.id === draggingNote?.note?.id ? 'dragging' : ''}`"
-          v-for="note in notes"
-          :style="{
-            left: getLeft(note.start) + 'px',
-            width: note.length * zoom.x * noteLength + 'rem',
-            top: getTop(note.note) + 'px',
-            height: zoomY * 2 + 'rem',
-          }"
-          :key="note.id"
-          @click.right.prevent="deleteNote(note)"
-        >
-          <div class="note-inner" :style="noteCSS(note)">
-            <span
-              @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'left' })"
-              @mouseup.prevent="dragEnd"
-              class="edge right"
-            ></span>
-            <span
-              @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'drag' })"
-              @mouseup.prevent="dragEnd"
-              class="middle"
-            ></span>
-            <span
-              @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'right' })"
-              @mouseup.prevent="dragEnd"
-              class="edge left"
-            ></span>
+        <div class="note-grid">
+          <div
+            :class="`note ${note.id === draggingNote?.note?.id ? 'dragging' : ''}`"
+            v-for="note in notes"
+            :style="{
+              gridColumn: `${beatsToUnits(note.start) + 2} / span ${beatsToUnits(note.length)}`,
+              gridRow: `${scaleLookup[note.note] + 1} / span 1`,
+              height: zoomY * 2 + 'rem',
+            }"
+            :key="note.id"
+            @click.right.prevent="deleteNote(note)"
+          >
+            <div class="note-inner" :style="noteCSS(note)">
+              <span
+                @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'left' })"
+                @mouseup.prevent="dragEnd"
+                class="edge right"
+              ></span>
+              <span
+                @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'drag' })"
+                @mouseup.prevent="dragEnd"
+                class="middle"
+              ></span>
+              <span
+                @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'right' })"
+                @mouseup.prevent="dragEnd"
+                class="edge left"
+              ></span>
+            </div>
           </div>
         </div>
         <div :class="`playhead ${playheadHidden ? 'hidden' : ''}`"></div>
@@ -57,7 +58,13 @@
 <script setup lang="ts">
 import { WritableComputedRef, computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { OctaveNote, notesBetweenC1AndG9 } from "../assets/notes";
-import { PianoRollNote, DragDetails, DragType, PianoRollProps, PianoRollSimpleNote } from "../assets/piano";
+import {
+  PianoRollNote,
+  DragDetails,
+  DragType,
+  PianoRollProps,
+  PianoRollSimpleNote,
+} from "../assets/piano";
 import { darken, lighten } from "color2k";
 import FullScreen from "./FullScreen.vue";
 
@@ -88,18 +95,20 @@ const props = withDefaults(defineProps<PianoRollProps>(), {
 
 const zoom = computed(() => {
   if (props.length === "infinite") return { x: props.zoomX, y: props.zoomY };
-  const minZoomX =
-    (rollWidth.value - rem.value * 4) / (rem.value * props.length * props.noteLength);
+  const minZoomX = (rollWidth.value - rem.value * 4) / (rem.value * props.length);
   const x = Math.max(minZoomX, props.zoomX);
 
   return { x, y: props.zoomY };
 });
 
 const simpleNotes = computed(() => {
-  return notes.value.map((note) => ({
-    id: note.id,
-    note: note.note,
-  } as PianoRollSimpleNote));
+  return notes.value.map(
+    (note) =>
+      ({
+        id: note.id,
+        note: note.note,
+      } as PianoRollSimpleNote)
+  );
 });
 
 const actualBeat = computed(() => {
@@ -131,17 +140,23 @@ const scale = computed(() => {
     .reverse();
 });
 
+const scaleLookup = computed(() => {
+  const lookup: Record<string, number> = {};
+  scale.value.forEach((note, index) => {
+    lookup[note] = index;
+  });
+  return lookup;
+});
+
 const notesStartingAt = (beat: number) => {
-  return notes.value
-    .filter((note) => note.start === lengthToBeats(beat))
-    .map((note) => note.note);
+  return notes.value.filter((note) => note.start === unitsToBeats(beat)).map((note) => note.note);
 };
 
 const notesEndingAt = (beat: number) => {
   return notes.value
     .filter((note) => {
-      if(beat === 0) beat = length.value;
-      return note.start + note.length === lengthToBeats(beat)
+      if (beat === 0) beat = length.value;
+      return note.start + note.length === unitsToBeats(beat);
     })
     .map((note) => note.note);
 };
@@ -154,33 +169,26 @@ watch(actualBeat, (beat) => {
 });
 
 watch(simpleNotes, (notes, oldNotes) => {
-  // startedNotes.value = notes.map((note) => note.note);
   const difference = notes.filter((note) => {
     const oldNote = oldNotes.find((n) => n.id === note.id);
     return !oldNote || oldNote.note !== note.note;
   });
 
-  if (difference.some(note => draggingNote.value?.note.id === note.id)) {
+  if (difference.some((note) => draggingNote.value?.note.id === note.id)) {
     const note = (draggingNote.value as DragDetails).note;
     endStartedNotes();
-    startAndEndNotes([note.note], (note.length * 1000 * 60) / 120 );
+    startAndEndNotes([note.note], (note.length * 1000 * 60) / 120);
   }
 });
 
-const unitClass = (index: number) => {
+const beatClass = (index: number) => {
   const unit = ((index - 1) % props.noteLength) + 1;
-  const isBeatEnd = unit === props.noteLength;
-  return `unit u${unit} ${isBeatEnd ? "beat-end" : ""}`;
+  return `beat b${unit} beat-end`;
 };
 
 // ====================
 // Calculate Note Position
 // ====================
-
-const getTop = (note: OctaveNote) => {
-  const index = scale.value.findIndex((n) => n === note);
-  return index * (rem.value * 2 * zoom.value.y);
-};
 
 const getNote = (y: number) => {
   const index = Math.floor(y / (rem.value * 2 * zoom.value.y));
@@ -190,14 +198,14 @@ const getNote = (y: number) => {
 const getLeft = (start: number, units: boolean = false) => {
   const labelWidth = rem.value * 4;
   const unitWidth = rem.value * zoom.value.x;
-  const startInUnits = units ? start : start * props.noteLength;
+  const startInUnits = units ? unitsToBeats(start) : start;
   return labelWidth + startInUnits * unitWidth;
 };
 
 const getStart = (x: number) => {
   const labelWidth = rem.value * 4;
   const unitWidth = rem.value * zoom.value.x;
-  return Math.floor((x - labelWidth) / unitWidth) / props.noteLength;
+  return Math.floor((x - labelWidth) / unitWidth);
 };
 
 function convertRemToPixels(rem: number) {
@@ -245,12 +253,12 @@ const dragEnd = () => {
   draggingNote.value = null;
 };
 
-const beatsToLength = (beats: number) => {
+const beatsToUnits = (beats: number) => {
   return beats * props.noteLength;
 };
 
-const lengthToBeats = (length: number) => {
-  return length / (props.noteLength);
+const unitsToBeats = (length: number) => {
+  return length / props.noteLength;
 };
 
 const setSelectedNotePosition = () => {
@@ -258,13 +266,17 @@ const setSelectedNotePosition = () => {
   const { x, y } = mousePosition.value;
   const note = draggingNote.value.note;
   const type = draggingNote.value.dragType;
-  const xStart = getStart(x) - lengthToBeats(1);
+  const xStart = getStart(x) - unitsToBeats(1);
   const newStart = getStart(x - draggingNote.value.offset);
   const newNote = getNote(y);
   if (type === "drag") {
     const lessThanZero = newStart < 0;
-    const greaterThanLength = beatsToLength(newStart + note.length) > length.value;
-    note.start = lessThanZero ? 0 : greaterThanLength ? lengthToBeats(length.value - note.length - (1)) : newStart;
+    const greaterThanLength = beatsToUnits(newStart + note.length) > length.value;
+    note.start = lessThanZero
+      ? 0
+      : greaterThanLength
+      ? unitsToBeats(length.value - note.length - 1)
+      : newStart;
     note.note = newNote;
     return;
   }
@@ -335,6 +347,7 @@ const endStartedNotes = () => {
 
 // Add note where mouse is
 const addNote = (e: MouseEvent) => {
+  console.log("add note");
   if (e.button !== 0) return;
   if (!pianoRoll.value) return;
   const x = mousePosition.value.x;
@@ -380,7 +393,15 @@ onUnmounted(() => {
 });
 
 const toneGridTemplate = computed(() => {
-  return `4rem repeat(${length.value}, calc(1rem * ${zoom.value.x}))`;
+  return `4rem repeat(${unitsToBeats(length.value)}, calc(1rem * ${zoom.value.x}))`;
+});
+
+const noteGridTemplate = computed(() => {
+  return `4rem repeat(${length.value}, calc(1rem * ${unitsToBeats(zoom.value.x)}))`;
+});
+
+const noteGridTemplateRows = computed(() => {
+  return `repeat(${length.value}, ${2 * zoom.value.y}rem)`;
 });
 
 const toneGridHeight = computed(() => {
@@ -400,7 +421,7 @@ const playheadHeight = computed(() => {
 });
 
 const playheadWidth = computed(() => {
-  return `${zoom.value.x}rem`;
+  return `${unitsToBeats(zoom.value.x)}rem`;
 });
 
 const playheadHidden = computed(() => {
@@ -460,15 +481,11 @@ const noteCSS = (note: PianoRollNote) => {
   }
 }
 .piano-roll-container {
-  //   @apply relative overflow-scroll bg-gray-700;
   position: relative;
   overflow: scroll;
   background-color: rgb(55, 65, 81);
   max-height: inherit;
   .piano-roll {
-    // @apply min-h-;
-    // @apply relative bg-gray-600 text-white font-bold;
-
     position: relative;
     --tw-bg-opacity: 1;
     background-color: rgb(75 85 99 / 1);
@@ -479,15 +496,12 @@ const noteCSS = (note: PianoRollNote) => {
     color: rgb(255 255 255 / var(--tw-text-opacity));
 
     .tone {
-      //   @apply grid items-center;
-
       display: grid;
       align-items: center;
       height: v-bind(toneGridHeight);
       grid-template-columns: v-bind(toneGridTemplate);
 
       & > div {
-        // @apply border-b border-r border-gray-500;
         border-style: solid;
         border-width: 0;
         border-bottom-width: 1px;
@@ -497,9 +511,6 @@ const noteCSS = (note: PianoRollNote) => {
         border-color: rgb(107 114 128 / var(--tw-border-opacity));
       }
       .label {
-        // @apply inline-block text-right w-16 bg-gray-500 p-1 border-gray-600;
-        // @apply flex flex-col justify-center;
-
         display: inline-block;
         width: 4rem;
         --tw-border-opacity: 1;
@@ -519,9 +530,7 @@ const noteCSS = (note: PianoRollNote) => {
         font-size: v-bind(labelFontSize);
       }
 
-      .unit {
-        // @apply w-full h-full bg-gray-600;
-
+      .beat {
         height: 100%;
         width: 100%;
         --tw-bg-opacity: 1;
@@ -530,59 +539,53 @@ const noteCSS = (note: PianoRollNote) => {
         border-right-width: 0;
 
         &.beat-end {
-          // @apply border-r-0;
-
           border-right-width: 1px;
         }
       }
 
-      &.sharp .unit {
-        // @apply bg-gray-700;
-
+      &.sharp .beat {
         --tw-bg-opacity: 1;
         background-color: rgb(55 65 81 / 1);
         background-color: rgb(55 65 81 / var(--tw-bg-opacity));
       }
     }
-    .note {
-      //   @apply absolute z-20;
 
+    .note-grid {
+      display: grid;
+      width: 100%;
+      height: v-bind(toneGridHeight);
+      grid-template-columns: v-bind(noteGridTemplate);
+      grid-template-rows: v-bind(noteGridTemplateRows);
       position: absolute;
-      z-index: 20;
-      .note-inner {
-        // @apply absolute border-2 w-full h-full;
-        // @apply grid;
+      top: 0;
+      pointer-events: none;
+      .note {
+        position: relative;
+        z-index: 20;
+        pointer-events: initial;
+        .note-inner {
+          position: absolute;
+          border-style: solid;
+          border-width: 2px;
+          width: 100%;
+          height: 100%;
+          display: grid;
+          grid-template-columns: 0.5rem 1fr 0.5rem;
 
-        position: absolute;
-        border-style: solid;
-        border-width: 2px;
-        width: 100%;
-        height: 100%;
-        display: grid;
-        grid-template-columns: 0.5rem 1fr 0.5rem;
-
-        .middle {
-          //   @apply cursor-grab;
-
-          cursor: grab;
+          .middle {
+            cursor: grab;
+          }
+          .edge {
+            cursor: col-resize;
+          }
         }
-        .edge {
-          //   @apply cursor-col-resize;
 
-          cursor: col-resize;
+        &.dragging .note-inner .middle {
+          cursor: grabbing;
         }
-      }
-
-      &.dragging .note-inner .middle {
-        // @apply cursor-grabbing;
-
-        cursor: grabbing;
       }
     }
-
     .playhead {
-      //   @apply absolute bg-gray-400 z-10 top-0 opacity-50 pointer-events-none;
-
       position: absolute;
       --tw-bg-opacity: 1;
       background-color: rgb(156 163 175 / 1);
@@ -597,8 +600,6 @@ const noteCSS = (note: PianoRollNote) => {
       width: v-bind(playheadWidth);
 
       &.hidden {
-        // @apply hidden;
-
         display: none;
       }
     }
