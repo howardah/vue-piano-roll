@@ -1,5 +1,3 @@
-Here's an updated readme including the new props and explanations:
-
 # PianoRoll Vue Component
 
 A flexible, highly customizable Piano Roll component for Vue.js. This component allows you to create a piano roll in your Vue application with ease.
