@@ -55,7 +55,7 @@ import { NoteEvent } from "../../src/assets/piano";
 import * as Tone from "tone";
 
 const notes = ref(demoNotes);
-const shadowMap = ref(demoShadowMap);
+const shadowMap = ref([...demoShadowMap, {note: "G"}]);
 
 const beat = ref(-1);
 const zoomX = ref(1);

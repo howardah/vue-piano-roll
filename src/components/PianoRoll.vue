@@ -136,7 +136,7 @@ const longShadows = computed((): ShadowMap[] => {
     const start = shadow.start || 0;
     const shadowLength = shadow.length || length.value - start;
     const matchingNotes = (Object.keys(scaleLookup.value) as OctaveNote[]).filter((note) =>
-      note.includes(shadow.note)
+      new RegExp(`${shadow.note}-?[0-9]`).test(note)
     );
     for (const note of matchingNotes) {
       shadows.push({
