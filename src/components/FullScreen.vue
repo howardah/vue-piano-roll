@@ -10,6 +10,7 @@ import { computed } from 'vue';
 
 interface Props {
     open: boolean;
+    color?: string;
 }
 
 const props = defineProps<Props>();
@@ -18,11 +19,16 @@ const classes = computed(() => {
     return `fullscreen ${props.open ? 'open' : ''}`;
 });
 
+const fullscreenColor = computed(() => {
+    return props.color || '#fff';
+});
+
 </script>
 
 <style lang="scss" scoped>
 .fullscreen {
     color: #fff;
+    color: v-bind(fullscreenColor);
     position: absolute;
     bottom: 0.5rem;
     right: 0.75rem;

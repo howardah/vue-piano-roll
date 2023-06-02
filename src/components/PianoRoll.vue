@@ -1,6 +1,6 @@
 <template>
   <div class="shrink-wrap" :class="{ fullscreen }">
-    <FullScreen @click="fullscreen = !fullscreen" :open="fullscreen" />
+    <FullScreen :color="fullscreenColor" @click="fullscreen = !fullscreen" :open="fullscreen" />
     <div class="piano-roll-container w-full rounded">
       <div ref="pianoRoll" class="piano-roll">
         <div
@@ -77,7 +77,7 @@ import {
   PianoRollSimpleNote,
   ShadowMap,
 } from "../assets/piano";
-import { darken, lighten } from "color2k";
+import { darken, lighten, getLuminance } from "color2k";
 import FullScreen from "./FullScreen.vue";
 
 const emit = defineEmits(["update:modelValue"]);
@@ -510,6 +510,10 @@ const borderWidth = computed(() => {
 
 const shadowColor = computed(() => {
   return props.shadowColor;
+});
+
+const fullscreenColor = computed(() => {
+  return getLuminance(props.backgroundColor) > 0.5 ? "#000" : "#fff";
 });
 
 const noteColor = (note: PianoRollNote) => {
