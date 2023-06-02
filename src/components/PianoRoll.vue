@@ -13,7 +13,7 @@
           <div class="label">{{ tone }}</div>
           <div
             :class="`beat ${beatClass(index)}`"
-            v-for="index in ticksToBeats(length)"
+            v-for="index in ticksToBeats(length, true)"
             :key="`${tone}:${index}`"
           ></div>
         </div>
@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import { WritableComputedRef, computed, onMounted, onUnmounted, ref, watch } from "vue";
-import { OctaveNote, notesBetweenC1AndG9 } from "../assets/notes";
+import { OctaveNote, notesBetweenC1AndG9, convertFlatToSharp } from "../assets/notes";
 import {
   PianoRollNote,
   DragDetails,
@@ -128,6 +128,7 @@ const zoom = computed(() => {
 const longShadows = computed((): ShadowMap[] => {
   if (!props.shadowMap) return [];
   return props.shadowMap.flatMap((shadow) => {
+    shadow = { ...shadow, note: convertFlatToSharp(shadow.note) };
     if (/[0-9]/.test(shadow.note)) {
       if (typeof scaleLookup.value[shadow.note] === "undefined") return [];
       return shadow;
@@ -168,7 +169,8 @@ const beatsToTicks = (beats: number) => {
   return Math.round(beats * props.ticksPerBeat);
 };
 
-const ticksToBeats = (length: number) => {
+const ticksToBeats = (length: number, rounded: boolean = false) => {
+  if (rounded) return Math.ceil(length / props.ticksPerBeat);
   return length / props.ticksPerBeat;
 };
 
@@ -184,7 +186,7 @@ const notes: WritableComputedRef<PianoRollNote[]> = computed({
 });
 
 const length = computed(() => {
-  if (props.length !== "infinite") return props.length * props.ticksPerBeat;
+  if (props.length !== "infinite") return beatsToTicks(props.length);
   const defaultLength = Math.ceil(
     (pianoRoll.value?.getBoundingClientRect().width || 0) / (rem.value * zoom.value.x)
   );
@@ -399,12 +401,18 @@ const addNote = (e: MouseEvent) => {
   const x = mousePosition.value.x;
   const y = mousePosition.value.y;
   const start = getStart(x);
+  let noteLength = props.defaultNoteLength;
+
+  if(beatsToTicks(start + noteLength) > length.value) {
+    noteLength = ticksToBeats(length.value - beatsToTicks(start));
+  }
+  
   if (start < 0) return;
   const note = getNote(y);
   const newNote = {
     id: getLastId() + 1,
     start,
-    length: props.defaultNoteLength,
+    length: noteLength,
     note,
     velocity: 100,
     color: props.noteColor,
@@ -441,7 +449,16 @@ onUnmounted(() => {
 });
 
 const toneGridTemplate = computed(() => {
-  return `4rem repeat(${ticksToBeats(length.value)}, calc(1rem * ${zoom.value.x}))`;
+  const lengthInBeats = ticksToBeats(length.value);
+  const repeat = Math.floor(lengthInBeats);
+
+  if (repeat !== lengthInBeats) {
+    const fraction = lengthInBeats % 1;
+    const lastBox = `calc(1rem * ${zoom.value.x} * ${fraction})`;
+    return `4rem repeat(${repeat}, calc(1rem * ${zoom.value.x})) ${lastBox}`;
+  }
+
+  return `4rem repeat(${repeat}, calc(1rem * ${zoom.value.x}))`;
 });
 
 const noteGridTemplate = computed(() => {
@@ -505,7 +522,15 @@ const labelBorderColor = computed(() => {
 });
 
 const borderWidth = computed(() => {
-  return props.borderWidth;
+  return props.borderWidth + "px";
+});
+
+const noteGridTop = computed(() => {
+  return `-${Math.ceil(props.borderWidth / 2)}px`;
+});
+
+const noteGridLeft = computed(() => {
+  return `-${Math.ceil(props.borderWidth / 2)}px`;
 });
 
 const shadowColor = computed(() => {
@@ -626,6 +651,7 @@ const noteCSS = (note: PianoRollNote) => {
 
         &.beat-end {
           border-right-width: 1px;
+          border-right-width: v-bind(borderWidth);
         }
       }
 
@@ -647,8 +673,10 @@ const noteCSS = (note: PianoRollNote) => {
       grid-template-columns: v-bind(noteGridTemplate);
       grid-template-rows: v-bind(noteGridTemplateRows);
       position: absolute;
-      top: 0;
+      top: -1px;
+      top: v-bind(noteGridTop);
       left: 0;
+      left: v-bind(noteGridLeft);
       pointer-events: none;
 
       .ghost {

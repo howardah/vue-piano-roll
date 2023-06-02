@@ -282,4 +282,9 @@ export const shadowMap: ShadowMap[] = [
     length: 4,
     note: "A3"
   },
+  {
+    start: 4,
+    length: 1.5,
+    note: "Ab2"
+  },
 ] as ShadowMap[];

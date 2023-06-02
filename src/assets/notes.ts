@@ -1,5 +1,7 @@
 export type Note = 'C' | 'C#' | 'Db' | 'D' | 'D#' | 'Eb' | 'E' | 'F' | 'F#' | 'Gb' | 'G' | 'G#' | 'Ab' | 'A' | 'A#' | 'Bb' | 'B';
 
+export const allNotes: Note[] = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
+
 export type OctaveNote = 'C-1' | 'C#-1' | 'Db-1' | 'D-1' | 'D#-1' | 'Eb-1' | 'E-1' | 'F-1' | 'F#-1' | 'Gb-1' |
             'G-1' | 'G#-1' | 'Ab-1' | 'A-1' | 'A#-1' | 'Bb-1' | 'B-1' | 'C0' | 'C#0' | 'Db0' |
             'D0' | 'D#0' | 'Eb0' | 'E0' | 'F0' | 'F#0' | 'Gb0' | 'G0' | 'G#0' | 'Ab0' | 'A0' |
@@ -37,3 +39,13 @@ export const notesBetweenC1AndG9: OctaveNote[] = [
   'G8', 'G#8', 'Ab8', 'A8', 'A#8', 'Bb8', 'B8', 'C9', 'C#9', 'Db9', 'D9',
   'D#9', 'Eb9', 'E9', 'F9', 'F#9', 'Gb9', 'G9'
 ];
+
+export const convertFlatToSharp = (note: Note | OctaveNote): Note | OctaveNote => {
+  const baseNote: Note = (notesBetweenC1AndG9.includes(note as any) ? note.replace(/-?\d/, '') : note) as Note;
+  const octave = (note as any).replace(baseNote, '');
+  if (note.includes('b')) {
+    const index = allNotes.indexOf(baseNote);
+    return (allNotes[index - 1] + octave) as Note | OctaveNote;
+  }
+  return (baseNote + octave) as Note | OctaveNote;
+}

@@ -23,7 +23,7 @@
         v-model="notes"
         :zoom-x="zoomX"
         :zoom-y="zoomY"
-        :length="16"
+        :length="16.5"
         :on-note-event="onNoteEvent"
         :ticks-per-beat="2"
         :note-height="1"
@@ -36,7 +36,6 @@
         label-background-color="white"
         grid-color="rgba(200,200,200,1)"
         label-border-color="rgba(200,200,200,1)"
-        note-color="rgba(0,0,0,0.5)"
       />
     </div>
     <pre
