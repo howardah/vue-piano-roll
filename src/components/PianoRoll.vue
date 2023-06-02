@@ -20,6 +20,17 @@
 
         <div class="note-grid">
           <div
+            v-for="ghost in longShadows"
+            :class="`ghost ${ghost.note}`"
+            :style="{
+              gridColumn: `${beatsToTicks(ghost.start || 0) + 2} / span ${beatsToTicks(
+                ghost.length || length
+              )}`,
+              gridRow: `${scaleLookup[ghost.note] + 1} / span 1`,
+              height: zoomY * 2 + 'rem',
+            }"
+          ></div>
+          <div
             :class="`note ${note.id === draggingNote?.note?.id ? 'dragging' : ''}`"
             v-for="note in notes"
             :style="{
@@ -64,6 +75,7 @@ import {
   DragType,
   PianoRollProps,
   PianoRollSimpleNote,
+  ShadowMap,
 } from "../assets/piano";
 import { darken, lighten } from "color2k";
 import FullScreen from "./FullScreen.vue";
@@ -92,6 +104,16 @@ const props = withDefaults(defineProps<PianoRollProps>(), {
   noteColor: "#f43f5f",
   loop: true,
   noteHeight: 2,
+  backgroundColor: "rgb(76, 85, 99)",
+  gridColor: "rgb(107, 114, 128)",
+  incidentalColor: "rgb(55, 65, 81)",
+  labelColor: "rgb(255, 255, 255)",
+  labelBackgroundColor: "rgb(107, 114, 128)",
+  labelIncidentalColor: "rgb(107, 114, 128)",
+  labelBorderColor: "rgb(75, 85, 99)",
+  borderWidth: 1,
+  shadowColor: "rgba(255, 255, 255, 0.3)",
+  shadowMap: () => [] as ShadowMap[],
   onNoteEvent: () => {},
 });
 
@@ -102,6 +124,35 @@ const zoom = computed(() => {
 
   return { x, y: props.zoomY };
 });
+
+const longShadows = computed((): ShadowMap[] => {
+  if (!props.shadowMap) return [];
+  return props.shadowMap.flatMap((shadow) => {
+    if (/[0-9]/.test(shadow.note)) {
+      if (typeof scaleLookup.value[shadow.note] === "undefined") return [];
+      return shadow;
+    }
+    const shadows = [];
+    const start = shadow.start || 0;
+    const shadowLength = shadow.length || length.value - start;
+    const matchingNotes = (Object.keys(scaleLookup.value) as OctaveNote[]).filter((note) =>
+      note.includes(shadow.note)
+    );
+    for (const note of matchingNotes) {
+      shadows.push({
+        note,
+        start,
+        length: shadowLength,
+      });
+    }
+    return shadows;
+  });
+});
+
+// const shortShadows = computed(():ShadowMap[] => {
+//   if(!props.shadowMap) return [];
+//   return props.shadowMap.filter((shadow) => typeof shadow.length === "number");
+// });
 
 const simpleNotes = computed(() => {
   return notes.value.map(
@@ -425,6 +476,42 @@ const playheadHidden = computed(() => {
   return currentTime.value < 0;
 });
 
+const backgroundColor = computed(() => {
+  return props.backgroundColor;
+});
+
+const gridColor = computed(() => {
+  return props.gridColor;
+});
+
+const incidentalColor = computed(() => {
+  return props.incidentalColor;
+});
+
+const labelColor = computed(() => {
+  return props.labelColor;
+});
+
+const labelBackgroundColor = computed(() => {
+  return props.labelBackgroundColor;
+});
+
+const labelIncidentalColor = computed(() => {
+  return props.labelIncidentalColor;
+});
+
+const labelBorderColor = computed(() => {
+  return props.labelBorderColor;
+});
+
+const borderWidth = computed(() => {
+  return props.borderWidth;
+});
+
+const shadowColor = computed(() => {
+  return props.shadowColor;
+});
+
 const noteColor = (note: PianoRollNote) => {
   if (note.selected) return lighten(note.color, 0.1);
   return note.color;
@@ -479,47 +566,44 @@ const noteCSS = (note: PianoRollNote) => {
     max-height: 100%;
     z-index: 5;
     background-color: rgb(76, 85, 99);
+    background-color: v-bind(backgroundColor);
   }
 }
 .piano-roll-container {
   position: relative;
   overflow: scroll;
-  background-color: rgb(55, 65, 81);
   max-height: inherit;
   .piano-roll {
     position: relative;
-    --tw-bg-opacity: 1;
-    background-color: rgb(75 85 99 / 1);
-    background-color: rgb(75 85 99 / var(--tw-bg-opacity));
     font-weight: 700;
-    --tw-text-opacity: 1;
-    color: rgb(255 255 255 / 1);
-    color: rgb(255 255 255 / var(--tw-text-opacity));
+    color: white;
+    color: v-bind(labelColor);
 
     .tone {
       display: grid;
       align-items: center;
       height: v-bind(toneGridHeight);
       grid-template-columns: v-bind(toneGridTemplate);
+      background-color: rgb(75, 85, 99);
+      background-color: v-bind(backgroundColor);
 
       & > div {
         border-style: solid;
         border-width: 0;
         border-bottom-width: 1px;
         border-right-width: 1px;
-        --tw-border-opacity: 1;
-        border-color: rgb(107 114 128 / 1);
-        border-color: rgb(107 114 128 / var(--tw-border-opacity));
+        border-bottom-width: v-bind(borderWidth);
+        border-right-width: v-bind(borderWidth);
+        border-color: rgb(107, 114, 128);
+        border-color: v-bind(gridColor);
       }
       .label {
         display: inline-block;
         width: 4rem;
-        --tw-border-opacity: 1;
-        border-color: rgb(75 85 99 / 1);
-        border-color: rgb(75 85 99 / var(--tw-border-opacity));
-        --tw-bg-opacity: 1;
-        background-color: rgb(107 114 128 / 1);
-        background-color: rgb(107 114 128 / var(--tw-bg-opacity));
+        border-color: rgb(75, 85, 99);
+        border-color: v-bind(labelBorderColor);
+        background-color: rgb(107, 114, 128);
+        background-color: v-bind(labelBackgroundColor);
         padding: 0.25rem;
         text-align: right;
         display: flex;
@@ -534,9 +618,6 @@ const noteCSS = (note: PianoRollNote) => {
       .beat {
         height: 100%;
         width: 100%;
-        --tw-bg-opacity: 1;
-        background-color: rgb(75 85 99 / 1);
-        background-color: rgb(75 85 99 / var(--tw-bg-opacity));
         border-right-width: 0;
 
         &.beat-end {
@@ -544,10 +625,14 @@ const noteCSS = (note: PianoRollNote) => {
         }
       }
 
-      &.sharp .beat {
-        --tw-bg-opacity: 1;
-        background-color: rgb(55 65 81 / 1);
-        background-color: rgb(55 65 81 / var(--tw-bg-opacity));
+      &.sharp {
+        background-color: rgb(55, 65, 81);
+        background-color: v-bind(incidentalColor);
+
+        .label {
+          background-color: rgb(55, 65, 81);
+          background-color: v-bind(labelIncidentalColor);
+        }
       }
     }
 
@@ -561,6 +646,16 @@ const noteCSS = (note: PianoRollNote) => {
       top: 0;
       left: 0;
       pointer-events: none;
+
+      .ghost {
+        pointer-events: none;
+        position: absolute;
+        z-index: 10;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.3);
+        background-color: v-bind(shadowColor);
+      }
       .note {
         position: relative;
         z-index: 20;
@@ -590,9 +685,7 @@ const noteCSS = (note: PianoRollNote) => {
     }
     .playhead {
       position: absolute;
-      --tw-bg-opacity: 1;
       background-color: rgb(156 163 175 / 1);
-      background-color: rgb(156 163 175 / var(--tw-bg-opacity));
       z-index: 10;
       top: 0;
       opacity: 0.5;

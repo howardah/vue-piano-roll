@@ -1,4 +1,4 @@
-import { OctaveNote } from './notes';
+import { Note, OctaveNote } from './notes';
 
 export interface PianoRollNote {
   id: number;
@@ -8,6 +8,12 @@ export interface PianoRollNote {
   velocity: number;
   color: string;
   selected: boolean;
+}
+
+export interface ShadowMap {
+  start?: number;
+  length?: number;
+  note: OctaveNote | Note;
 }
 
 export interface PianoRollSimpleNote {
@@ -49,5 +55,15 @@ export interface PianoRollProps {
   length?: number | "infinite";
   loop?: boolean;
   noteColor?: string;
+  backgroundColor?: string;
+  incidentalColor?: string;
+  gridColor?: string;
+  labelColor?: string;
+  labelIncidentalColor?: string;
+  labelBackgroundColor?: string;
+  labelBorderColor?: string;
+  borderWidth?: number;
+  shadowColor?: string;
+  shadowMap?: ShadowMap[];
   onNoteEvent?: (event: NoteEvent) => void;
 }

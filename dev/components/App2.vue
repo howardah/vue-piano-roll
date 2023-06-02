@@ -28,6 +28,15 @@
         :ticks-per-beat="2"
         :note-height="1"
         :shadow-map="shadowMap"
+        shadow-color="rgba(100,50,100,0.3)"
+        label-incidental-color="rgba(0,0,0,0.1)"
+        label-color="teal"
+        background-color="white"
+        incidental-color="rgba(0,0,0,0.1)"
+        label-background-color="white"
+        grid-color="rgba(200,200,200,1)"
+        label-border-color="rgba(200,200,200,1)"
+        note-color="rgba(0,0,0,0.5)"
       />
     </div>
     <pre

@@ -1,3 +1,5 @@
+export type Note = 'C' | 'C#' | 'Db' | 'D' | 'D#' | 'Eb' | 'E' | 'F' | 'F#' | 'Gb' | 'G' | 'G#' | 'Ab' | 'A' | 'A#' | 'Bb' | 'B';
+
 export type OctaveNote = 'C-1' | 'C#-1' | 'Db-1' | 'D-1' | 'D#-1' | 'Eb-1' | 'E-1' | 'F-1' | 'F#-1' | 'Gb-1' |
             'G-1' | 'G#-1' | 'Ab-1' | 'A-1' | 'A#-1' | 'Bb-1' | 'B-1' | 'C0' | 'C#0' | 'Db0' |
             'D0' | 'D#0' | 'Eb0' | 'E0' | 'F0' | 'F#0' | 'Gb0' | 'G0' | 'G#0' | 'Ab0' | 'A0' |

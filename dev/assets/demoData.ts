@@ -1,4 +1,4 @@
-import { PianoRollNote } from "../../src/assets/piano";
+import { PianoRollNote, ShadowMap } from "../../src/assets/piano";
 
 export const notes = [
   {
@@ -263,3 +263,23 @@ export const notes = [
     selected: false,
   },
 ] as PianoRollNote[];
+
+
+export const shadowMap: ShadowMap[] = [
+  {
+    note: "B",
+  },
+  {
+    note: "D#3"
+  },
+  {
+    start: 0,
+    length: 4,
+    note: "F#"
+  },
+  {
+    start: 4,
+    length: 4,
+    note: "A3"
+  },
+] as ShadowMap[];
