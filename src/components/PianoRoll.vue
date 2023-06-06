@@ -1,27 +1,31 @@
 <template>
-  <div class="shrink-wrap" :class="{ fullscreen }">
-    <FullScreen :color="fullscreenColor" @click="fullscreen = !fullscreen" :open="fullscreen" />
-    <div class="piano-roll-container w-full rounded">
-      <div ref="pianoRoll" class="piano-roll">
+  <div class="pr-shrink-wrap" :class="{ 'pr-fullscreen': prFullscreen }">
+    <FullScreen
+      :color="fullscreenColor"
+      @click="prFullscreen = !prFullscreen"
+      :open="prFullscreen"
+    />
+    <div class="pr-container">
+      <div ref="pianoRoll" class="pr-piano-roll">
         <div
           @mousedown.prevent="addNote"
           @mouseup.prevent="dragEnd"
-          :class="`tone ${/#/.test(tone) ? 'sharp' : ''}`"
+          :class="`pr-tone ${/#/.test(tone) ? 'pr-sharp' : ''}`"
           v-for="tone in scale"
           :key="tone"
         >
-          <div class="label">{{ tone }}</div>
+          <div class="pr-label">{{ tone }}</div>
           <div
-            :class="`beat ${beatClass(index)}`"
+            :class="`${beatClass(index)}`"
             v-for="index in ticksToBeats(length, true)"
             :key="`${tone}:${index}`"
           ></div>
         </div>
 
-        <div class="note-grid">
+        <div class="pr-note-grid">
           <div
             v-for="ghost in longShadows"
-            :class="`ghost ${ghost.note}`"
+            :class="`pr-ghost ${ghost.note}`"
             :style="{
               gridColumn: `${beatsToTicks(ghost.start || 0) + 2} / span ${beatsToTicks(
                 ghost.length || length
@@ -31,7 +35,7 @@
             }"
           ></div>
           <div
-            :class="`note ${note.id === draggingNote?.note?.id ? 'dragging' : ''}`"
+            :class="`pr-note ${note.id === draggingNote?.note?.id ? 'pr-dragging' : ''}`"
             v-for="note in notes"
             :style="{
               gridColumn: `${beatsToTicks(note.start) + 2} / span ${beatsToTicks(note.length)}`,
@@ -41,26 +45,26 @@
             :key="note.id"
             @click.right.prevent="deleteNote(note)"
           >
-            <div class="note-inner" :style="noteCSS(note)">
+            <div class="pr-note-inner" :style="noteCSS(note)">
               <span
                 @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'left' })"
                 @mouseup.prevent="dragEnd"
-                class="edge right"
+                class="pr-edge pr-right"
               ></span>
               <span
                 @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'drag' })"
                 @mouseup.prevent="dragEnd"
-                class="middle"
+                class="pr-middle"
               ></span>
               <span
                 @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'right' })"
                 @mouseup.prevent="dragEnd"
-                class="edge left"
+                class="pr-edge pr-left"
               ></span>
             </div>
           </div>
         </div>
-        <div :class="`playhead ${playheadHidden ? 'hidden' : ''}`"></div>
+        <div :class="`pr-playhead ${playheadHidden ? 'pr-hidden' : ''}`"></div>
       </div>
     </div>
   </div>
@@ -87,7 +91,7 @@ const pianoRoll = ref<HTMLDivElement | null>(null);
 const draggingNote = ref<DragDetails | null>(null);
 
 const rem = ref(16);
-const fullscreen = ref(false);
+const prFullscreen = ref(false);
 const rollWidth = ref(0);
 
 const startedNotes = ref([] as OctaveNote[]);
@@ -247,7 +251,7 @@ watch(simpleNotes, (notes, oldNotes) => {
 
 const beatClass = (index: number) => {
   const unit = ((index - 1) % props.ticksPerBeat) + 1;
-  return `beat b${unit} beat-end`;
+  return `pr-beat pr-b${unit} pr-beat-end`;
 };
 
 // ====================
@@ -403,10 +407,10 @@ const addNote = (e: MouseEvent) => {
   const start = getStart(x);
   let noteLength = props.defaultNoteLength;
 
-  if(beatsToTicks(start + noteLength) > length.value) {
+  if (beatsToTicks(start + noteLength) > length.value) {
     noteLength = ticksToBeats(length.value - beatsToTicks(start));
   }
-  
+
   if (start < 0) return;
   const note = getNote(y);
   const newNote = {
@@ -581,12 +585,12 @@ const noteCSS = (note: PianoRollNote) => {
   -webkit-box-sizing: border-box;
 }
 
-.shrink-wrap {
+.pr-shrink-wrap {
   position: relative;
   width: 100%;
   max-height: inherit;
 
-  &.fullscreen {
+  &.pr-fullscreen {
     position: fixed;
     top: 0;
     left: 0;
@@ -598,17 +602,17 @@ const noteCSS = (note: PianoRollNote) => {
     background-color: v-bind(backgroundColor);
   }
 }
-.piano-roll-container {
+.pr-container {
   position: relative;
   overflow: scroll;
   max-height: inherit;
-  .piano-roll {
+  .pr-piano-roll {
     position: relative;
     font-weight: 700;
     color: white;
     color: v-bind(labelColor);
 
-    .tone {
+    .pr-tone {
       display: grid;
       align-items: center;
       height: v-bind(toneGridHeight);
@@ -626,7 +630,7 @@ const noteCSS = (note: PianoRollNote) => {
         border-color: rgb(107, 114, 128);
         border-color: v-bind(gridColor);
       }
-      .label {
+      .pr-label {
         display: inline-block;
         width: 4rem;
         border-color: rgb(75, 85, 99);
@@ -644,29 +648,29 @@ const noteCSS = (note: PianoRollNote) => {
         font-size: v-bind(labelFontSize);
       }
 
-      .beat {
+      .pr-beat {
         height: 100%;
         width: 100%;
         border-right-width: 0;
 
-        &.beat-end {
+        &.pr-beat-end {
           border-right-width: 1px;
           border-right-width: v-bind(borderWidth);
         }
       }
 
-      &.sharp {
+      &.pr-sharp {
         background-color: rgb(55, 65, 81);
         background-color: v-bind(incidentalColor);
 
-        .label {
+        .pr-label {
           background-color: rgb(55, 65, 81);
           background-color: v-bind(labelIncidentalColor);
         }
       }
     }
 
-    .note-grid {
+    .pr-note-grid {
       display: grid;
       width: 100%;
       height: v-bind(toneGridHeight);
@@ -679,7 +683,7 @@ const noteCSS = (note: PianoRollNote) => {
       left: v-bind(noteGridLeft);
       pointer-events: none;
 
-      .ghost {
+      .pr-ghost {
         pointer-events: none;
         position: absolute;
         z-index: 10;
@@ -688,11 +692,11 @@ const noteCSS = (note: PianoRollNote) => {
         background-color: rgba(255, 255, 255, 0.3);
         background-color: v-bind(shadowColor);
       }
-      .note {
+      .pr-note {
         position: relative;
         z-index: 20;
         pointer-events: initial;
-        .note-inner {
+        .pr-note-inner {
           position: absolute;
           border-style: solid;
           border-width: 2px;
@@ -702,20 +706,20 @@ const noteCSS = (note: PianoRollNote) => {
           display: grid;
           grid-template-columns: 0.5rem 1fr 0.5rem;
 
-          .middle {
+          .pr-middle {
             cursor: grab;
           }
-          .edge {
+          .pr-edge {
             cursor: col-resize;
           }
         }
 
-        &.dragging .note-inner .middle {
+        &.pr-dragging .pr-note-inner .pr-middle {
           cursor: grabbing;
         }
       }
     }
-    .playhead {
+    .pr-playhead {
       position: absolute;
       background-color: rgb(156 163 175 / 1);
       z-index: 10;
@@ -727,7 +731,7 @@ const noteCSS = (note: PianoRollNote) => {
       height: v-bind(playheadHeight);
       width: v-bind(playheadWidth);
 
-      &.hidden {
+      &.pr-hidden {
         display: none;
       }
     }

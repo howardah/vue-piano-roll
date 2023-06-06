@@ -16,7 +16,7 @@ interface Props {
 const props = defineProps<Props>();
 
 const classes = computed(() => {
-    return `fullscreen ${props.open ? 'open' : ''}`;
+    return `pr-fullscreen-icon ${props.open ? 'pr-open' : ''}`;
 });
 
 const fullscreenColor = computed(() => {
@@ -26,7 +26,7 @@ const fullscreenColor = computed(() => {
 </script>
 
 <style lang="scss" scoped>
-.fullscreen {
+.pr-fullscreen-icon {
     color: #fff;
     color: v-bind(fullscreenColor);
     position: absolute;

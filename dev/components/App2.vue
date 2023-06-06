@@ -23,7 +23,7 @@
         v-model="notes"
         :zoom-x="zoomX"
         :zoom-y="zoomY"
-        :length="16.5"
+        :length="25.5"
         :on-note-event="onNoteEvent"
         :ticks-per-beat="2"
         :note-height="1"
@@ -50,11 +50,11 @@ import TheTransport from "./theTransport.vue";
 import PianoRoll from "../../src/components/PianoRoll.vue";
 import { notes as demoNotes, shadowMap as demoShadowMap } from "../assets/demoData";
 import { onMounted, onUpdated, ref, watch } from "vue";
-import { NoteEvent } from "../../src/assets/piano";
+import { NoteEvent, ShadowMap } from "../../src/assets/piano";
 import * as Tone from "tone";
 
 const notes = ref(demoNotes);
-const shadowMap = ref([...demoShadowMap, {note: "G"}]);
+const shadowMap = ref([...demoShadowMap, {note: "G"}] as ShadowMap[]);
 
 const beat = ref(-1);
 const zoomX = ref(1);
