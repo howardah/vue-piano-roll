@@ -46,7 +46,7 @@
 </template>
 
 <script lang="ts" setup>
-import TheTransport from "./theTransport.vue";
+import TheTransport from "./TheTransport.vue";
 import PianoRoll from "../../src/components/PianoRoll.vue";
 import { notes as demoNotes, shadowMap as demoShadowMap } from "../assets/demoData";
 import { onMounted, onUpdated, ref, watch } from "vue";

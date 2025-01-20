@@ -34,7 +34,7 @@ import pauseIcon from "@iconify-icons/mdi/pause";
 import stopIcon from "@iconify-icons/mdi/stop";
 import rewindIcon from "@iconify-icons/mdi/rewind";
 import fastForwardIcon from "@iconify-icons/mdi/fast-forward";
-import { computed, toRefs } from 'vue';
+import { computed, withDefaults } from 'vue';
 
 interface Props {
     tempo: number;

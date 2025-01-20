@@ -26,7 +26,7 @@ const notes = ref([]);
 or
 
 ```typescript
-import { PianoRoll, PianoRollNote } from "vue-piano-roll";
+import { PianoRoll, type PianoRollNote } from "vue-piano-roll";
 import "vue-piano-roll/dist/style.css";
 
 const notes = ref([] as PianoRollNote[]);
