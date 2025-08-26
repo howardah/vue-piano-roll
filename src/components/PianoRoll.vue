@@ -1,5 +1,9 @@
 <template>
-  <div class="pr-shrink-wrap" :class="{ 'pr-fullscreen': prFullscreen }">
+  <div
+    :style="style"
+    class="pr-shrink-wrap"
+    :class="{ 'pr-fullscreen': prFullscreen }"
+  >
     <FullScreen
       :color="fullscreenColor"
       @click="prFullscreen = !prFullscreen"
@@ -576,6 +580,31 @@ const noteCSS = (note: PianoRollNote) => {
     borderBottomColor: noteShadow,
   };
 };
+
+const style = computed(() => {
+  return {
+    '--pr-background-color': backgroundColor.value,
+    '--pr-grid-color': gridColor.value,
+    '--pr-incidental-color': incidentalColor.value,
+    '--pr-label-color': labelColor.value,
+    '--pr-label-background-color': labelBackgroundColor.value,
+    '--pr-label-incidental-color': labelIncidentalColor.value,
+    '--pr-label-border-color': labelBorderColor.value,
+    '--pr-border-width': borderWidth.value,
+    '--pr-shadow-color': shadowColor.value,
+    '--pr-tone-grid-height': toneGridHeight.value,
+    '--pr-tone-grid-template': toneGridTemplate.value,
+    '--pr-note-grid-template': noteGridTemplate.value,
+    '--pr-note-grid-template-rows': noteGridTemplateRows.value,
+    '--pr-note-grid-top': noteGridTop.value,
+    '--pr-note-grid-left': noteGridLeft.value,
+    '--pr-label-font-size': labelFontSize.value,
+    '--pr-playhead-left': playheadLeft.value,
+    '--pr-playhead-height': playheadHeight.value,
+    '--pr-playhead-width': playheadWidth.value,
+    '--pr-note-height': noteHeight.value,
+  };
+});
 </script>
 
 <style lang="scss" scoped>
@@ -599,7 +628,7 @@ const noteCSS = (note: PianoRollNote) => {
     max-height: 100%;
     z-index: 5;
     background-color: rgb(76, 85, 99);
-    background-color: v-bind(backgroundColor);
+    background-color: var(--pr-background-color);
   }
 }
 .pr-container {
@@ -610,42 +639,40 @@ const noteCSS = (note: PianoRollNote) => {
     position: relative;
     font-weight: 700;
     color: white;
-    color: v-bind(labelColor);
+    color: var(--pr-label-color);
 
     .pr-tone {
       display: grid;
       align-items: center;
-      height: v-bind(toneGridHeight);
-      grid-template-columns: v-bind(toneGridTemplate);
+      height: var(--pr-tone-grid-height);
+      grid-template-columns: var(--pr-tone-grid-template);
       background-color: rgb(75, 85, 99);
-      background-color: v-bind(backgroundColor);
+      background-color: var(--pr-background-color);
 
       & > div {
         border-style: solid;
         border-width: 0;
         border-bottom-width: 1px;
         border-right-width: 1px;
-        border-bottom-width: v-bind(borderWidth);
-        border-right-width: v-bind(borderWidth);
+        border-bottom-width: var(--pr-border-width);
+        border-right-width: var(--pr-border-width);
         border-color: rgb(107, 114, 128);
-        border-color: v-bind(gridColor);
+        border-color: var(--pr-grid-color);
       }
       .pr-label {
         display: inline-block;
         width: 4rem;
         border-color: rgb(75, 85, 99);
-        border-color: v-bind(labelBorderColor);
+        border-color: var(--pr-label-border-color);
         background-color: rgb(107, 114, 128);
-        background-color: v-bind(labelBackgroundColor);
+        background-color: var(--pr-label-background-color);
         padding: 0.25rem;
         text-align: right;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        height: var(--61d86246-toneGridHeight);
-        font-size: var(--61d86246-labelFontSize);
-        height: v-bind(toneGridHeight);
-        font-size: v-bind(labelFontSize);
+        height: var(--pr-tone-grid-height);
+        font-size: var(--pr-label-font-size);
       }
 
       .pr-beat {
@@ -655,17 +682,17 @@ const noteCSS = (note: PianoRollNote) => {
 
         &.pr-beat-end {
           border-right-width: 1px;
-          border-right-width: v-bind(borderWidth);
+          border-right-width: var(--pr-border-width);
         }
       }
 
       &.pr-sharp {
         background-color: rgb(55, 65, 81);
-        background-color: v-bind(incidentalColor);
+        background-color: var(--pr-incidental-color);
 
         .pr-label {
           background-color: rgb(55, 65, 81);
-          background-color: v-bind(labelIncidentalColor);
+          background-color: var(--pr-label-incidental-color);
         }
       }
     }
@@ -673,14 +700,14 @@ const noteCSS = (note: PianoRollNote) => {
     .pr-note-grid {
       display: grid;
       width: 100%;
-      height: v-bind(toneGridHeight);
-      grid-template-columns: v-bind(noteGridTemplate);
-      grid-template-rows: v-bind(noteGridTemplateRows);
+      height: var(--pr-tone-grid-height);
+      grid-template-columns: var(--pr-note-grid-template);
+      grid-template-rows: var(--pr-note-grid-template-rows);
       position: absolute;
       top: -1px;
-      top: v-bind(noteGridTop);
+      top: var(--pr-note-grid-top);
       left: 0;
-      left: v-bind(noteGridLeft);
+      left: var(--pr-note-grid-left);
       pointer-events: none;
 
       .pr-ghost {
@@ -690,7 +717,7 @@ const noteCSS = (note: PianoRollNote) => {
         width: 100%;
         height: 100%;
         background-color: rgba(255, 255, 255, 0.3);
-        background-color: v-bind(shadowColor);
+        background-color: var(--pr-shadow-color);
       }
       .pr-note {
         position: relative;
@@ -700,7 +727,7 @@ const noteCSS = (note: PianoRollNote) => {
           position: absolute;
           border-style: solid;
           border-width: 2px;
-          border-width: v-bind(noteHeight);
+          border-width: var(--pr-note-height);
           width: 100%;
           height: 100%;
           display: grid;
@@ -727,9 +754,9 @@ const noteCSS = (note: PianoRollNote) => {
       opacity: 0.5;
       pointer-events: none;
 
-      left: v-bind(playheadLeft);
-      height: v-bind(playheadHeight);
-      width: v-bind(playheadWidth);
+      left: var(--pr-playhead-left);
+      height: var(--pr-playhead-height);
+      width: var(--pr-playhead-width);
 
       &.pr-hidden {
         display: none;
