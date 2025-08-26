@@ -1,15 +1,16 @@
 {
   "name": "vue-piano-roll",
-  "version": "1.2.14",
+  "version": "1.2.15",
   "description": "A DAW-like Piano Roll Vue Component.",
-  "main": "dist/vue-piano-roll.umd.js",
-  "module": "dist/vue-piano-roll.es.js",
+  "main": "./dist/vue-piano-roll.umd.js",
+  "module": "./dist/vue-piano-roll.es.js",
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/vue-piano-roll.es.js",
       "require": "./dist/vue-piano-roll.umd.js"
     },
