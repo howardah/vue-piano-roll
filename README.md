@@ -18,7 +18,7 @@ Import the component in your Vue application:
 
 ```javascript
 import { PianoRoll } from "vue-piano-roll";
-import "vue-piano-roll/dist/style.css";
+import "vue-piano-roll/dist/vue-piano-roll.css";
 
 const notes = ref([]);
 ```
@@ -27,7 +27,7 @@ or
 
 ```typescript
 import { PianoRoll, type PianoRollNote } from "vue-piano-roll";
-import "vue-piano-roll/dist/style.css";
+import "vue-piano-roll/dist/vue-piano-roll.css";
 
 const notes = ref([] as PianoRollNote[]);
 ```
