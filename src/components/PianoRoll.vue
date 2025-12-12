@@ -773,6 +773,7 @@ const style = computed(() => {
       left: 0;
       left: var(--pr-note-grid-left);
       pointer-events: none;
+      min-width: var(--pr-tone-grid-width);
 
       .pr-ghost {
         pointer-events: none;
