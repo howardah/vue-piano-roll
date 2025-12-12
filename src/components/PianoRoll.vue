@@ -12,13 +12,16 @@
     <div class="pr-container">
       <div ref="pianoRoll" class="pr-piano-roll">
         <div
-          @mousedown.prevent="addNote"
-          @mouseup.prevent="dragEnd"
           :class="`pr-tone ${/#/.test(tone) ? 'pr-sharp' : ''}`"
           v-for="tone in scale"
           :key="tone"
         >
           <div class="pr-label">{{ tone }}</div>
+          <div
+              class="pr-tone-inner"
+              @mousedown.prevent="addNote"
+              @mouseup.prevent="dragEnd">
+          </div>
         </div>
 
         <div class="pr-note-grid">
@@ -26,7 +29,7 @@
             v-for="ghost in longShadows"
             :class="`pr-ghost ${ghost.note}`"
             :style="{
-              gridColumn: `${beatsToTicks(ghost.start || 0) + 2} / span ${beatsToTicks(
+              gridColumn: `${beatsToTicks(ghost.start || 0) + 1} / span ${beatsToTicks(
                 ghost.length || length
               )}`,
               gridRow: `${scaleLookup[ghost.note] + 1} / span 1`,
@@ -36,8 +39,10 @@
           <div
             :class="`pr-note ${note.id === draggingNote?.note?.id ? 'pr-dragging' : ''}`"
             v-for="note in notes"
+            :note-start="note.start"
+            :note-length="note.length"
             :style="{
-              gridColumn: `${beatsToTicks(note.start) + 2} / span ${beatsToTicks(note.length)}`,
+              gridColumn: `${beatsToTicks(note.start) + 1} / span ${beatsToTicks(note.length)}`,
               gridRow: `${scaleLookup[note.note] + 1} / span 1`,
               height: zoomY * 2 + 'rem',
             }"
@@ -284,16 +289,15 @@ const getNote = (y: number) => {
 };
 
 const getLeft = (start: number, ticks: boolean = false) => {
-	const labelWidth = rem.value * 4;
 	const unitWidth = rem.value * zoom.value.x;
 	const startInBeats = ticks ? ticksToBeats(start) : start;
-	return labelWidth + startInBeats * unitWidth;
+	return startInBeats * unitWidth;
 };
 
 const getStart = (x: number) => {
-	const labelWidth = rem.value * 4;
 	const unitWidth = rem.value * zoom.value.x;
-	return ticksToBeats(Math.floor(beatsToTicks((x - labelWidth) / unitWidth)));
+
+	return ticksToBeats(Math.floor(beatsToTicks(x / unitWidth)));
 };
 
 function convertRemToPixels(rem: number) {
@@ -391,7 +395,9 @@ const setSelectedNotePosition = () => {
 const mouseMove = (e: MouseEvent) => {
 	if (!pianoRoll.value) return;
 	const rect = pianoRoll.value.getBoundingClientRect();
-	const x = e.clientX - rect.left;
+	const label = document.querySelector(".pr-label");
+	const labelWidth = label?.getBoundingClientRect().width;
+	const x = e.clientX - rect.left - (labelWidth || 0);
 	const y = e.clientY - rect.top;
 	mousePosition.value = { x, y };
 	setSelectedNotePosition();
@@ -455,10 +461,6 @@ const addNote = (e: MouseEvent) => {
 		selected: false,
 	} as PianoRollNote;
 	notes.value.push(newNote);
-
-	console.log(
-		`${beatsToTicks(newNote.start) + 2} / span ${beatsToTicks(newNote.length)}`,
-	);
 
 	dragStart(newNote, { e, dragType: "right" });
 };
@@ -525,7 +527,7 @@ const toneGridIncidentalBG = computed(() => {
 // });
 
 const noteGridTemplate = computed(() => {
-	return `4rem repeat(${length.value}, calc(1rem * ${ticksToBeats(zoom.value.x)}))`;
+	return `repeat(${length.value}, calc(1rem * ${ticksToBeats(zoom.value.x)}))`;
 });
 
 const noteGridTemplateRows = computed(() => {
@@ -593,7 +595,8 @@ const noteGridTop = computed(() => {
 });
 
 const noteGridLeft = computed(() => {
-	return `-${Math.ceil(props.borderWidth / 2)}px`;
+	return `var(--pr-title-width)`;
+	// return `-${Math.ceil(props.borderWidth / 2)}px`;
 });
 
 const shadowColor = computed(() => {
@@ -673,6 +676,8 @@ const style = computed(() => {
 }
 
 .pr-shrink-wrap {
+    --pr-title-width: clamp(4rem, calc(4 * var(--pr-tone-grid-cell-width)), 6rem);
+
   position: relative;
   width: 100%;
   max-height: inherit;
@@ -701,15 +706,8 @@ const style = computed(() => {
 
     .pr-tone {
       display: grid;
-      align-items: center;
-      height: var(--pr-tone-grid-height);
-      grid-template-columns: var(--pr-tone-grid-template);
-      background-color: rgb(75, 85, 99);
+      grid-template-columns: var(--pr-title-width) 1fr;
       background-color: var(--pr-background-color);
-
-      background: var(--pr-tone-grid-bg);
-
-      min-width: var(--pr-tone-grid-width);
 
       & > div {
         border-style: solid;
@@ -723,7 +721,7 @@ const style = computed(() => {
       }
       .pr-label {
         display: inline-block;
-        width: 4rem;
+        width: 100%;
         border-color: rgb(75, 85, 99);
         border-color: var(--pr-label-border-color);
         background-color: rgb(107, 114, 128);
@@ -748,11 +746,21 @@ const style = computed(() => {
         }
       }
 
+
+
+    .pr-tone-inner {
+        height: var(--pr-tone-grid-height);
+        background: var(--pr-tone-grid-bg);
+        min-width: var(--pr-tone-grid-width);
+    }
+
       &.pr-sharp {
         background-color: rgb(55, 65, 81);
         /* background-color: var(--pr-incidental-color); */
 
-        background: var(--pr-tone-grid-incidental-bg);
+        .pr-tone-inner {
+            background: var(--pr-tone-grid-incidental-bg);
+        }
 
         .pr-label {
           background-color: rgb(55, 65, 81);
@@ -819,7 +827,7 @@ const style = computed(() => {
       opacity: 0.5;
       pointer-events: none;
 
-      left: var(--pr-playhead-left);
+      left: calc(var(--pr-note-grid-left) + var(--pr-playhead-left));
       height: var(--pr-playhead-height);
       width: var(--pr-playhead-width);
 
