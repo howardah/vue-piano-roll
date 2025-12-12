@@ -51,17 +51,17 @@
           >
             <div class="pr-note-inner" :style="noteCSS(note)">
               <span
-                @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'left' })"
+                @mousedown.prevent="(e: MouseEvent) => dragStart(note, { e, dragType: 'left' })"
                 @mouseup.prevent="dragEnd"
                 class="pr-edge pr-right"
               ></span>
               <span
-                @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'drag' })"
+                @mousedown.prevent="(e: MouseEvent) => dragStart(note, { e, dragType: 'drag' })"
                 @mouseup.prevent="dragEnd"
                 class="pr-middle"
               ></span>
               <span
-                @mousedown.prevent="(e) => dragStart(note, { e, dragType: 'right' })"
+                @mousedown.prevent="(e: MouseEvent) => dragStart(note, { e, dragType: 'right' })"
                 @mouseup.prevent="dragEnd"
                 class="pr-edge pr-left"
               ></span>
